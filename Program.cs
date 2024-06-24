@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using RevenueRecognitionSystem.Auth;
 using RevenueRecognitionSystem.context;
-using RevenueRecognitionSystem.Mappers;
 using RevenueRecognitionSystem.services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,7 +14,36 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Revenue Recognition System API", Version = "v1" });
+
+    options.AddSecurityDefinition("basic", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "basic",
+        In = ParameterLocation.Header,
+        Description =
+            "Basic Authentication header using the Basic scheme. Example: \"Authorization: Basic {base64encoded username:password}\""
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "basic"
+                }
+            },
+            new string[] { }
+        }
+    });
+});
+
 builder.Services.AddScoped<ClientsService>();
 builder.Services.AddAutoMapper(typeof(Program));
 
