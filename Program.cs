@@ -16,7 +16,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Revenue Recognition System API", Version = "v1" });
+    options.SwaggerDoc("v1.0", new OpenApiInfo { Title = "Revenue Recognition System API", Version = "v1.0" });
 
     options.AddSecurityDefinition("basic", new OpenApiSecurityScheme
     {
@@ -65,7 +65,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Revenue Recognition System API v1.0");
+        c.SwaggerEndpoint("/swagger/v1.0/swagger.json", "Revenue Recognition System API v1.0");
     });
 }
 

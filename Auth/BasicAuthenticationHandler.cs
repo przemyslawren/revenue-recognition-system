@@ -3,23 +3,28 @@ using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
+using RevenueRecognitionSystem.context;
 
 namespace RevenueRecognitionSystem.Auth;
 
 public class BasicAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
+    private readonly ApplicationDbContext _context;
 
     public BasicAuthenticationHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
         UrlEncoder encoder,
-        TimeProvider timeProvider)
-        : base(options, logger, encoder) {}
+        ApplicationDbContext context)
+        : base(options, logger, encoder)
+    {
+        _context = context;
+    }
     
-    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+    protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         if (!Request.Headers.ContainsKey("Authorization"))
-            return Task.FromResult(AuthenticateResult.Fail("Missing Authorization Header"));
+            return AuthenticateResult.Fail("Missing Authorization Header");
 
         try
         {
@@ -28,39 +33,26 @@ public class BasicAuthenticationHandler : AuthenticationHandler<AuthenticationSc
             var username = credentials[0];
             var password = credentials[1];
 
-            switch (username)
+            var employee = _context.Employees.SingleOrDefault(e => e.Login == username && e.Password == password);
+
+            if (employee == null)
             {
-                case "admin" when password == "password":
-                {
-                    var claims = new[] {
-                        new Claim(ClaimTypes.Name, username),
-                        new Claim(ClaimTypes.Role, "Admin")
-                    };
-                    var identity = new ClaimsIdentity(claims, Scheme.Name);
-                    var principal = new ClaimsPrincipal(identity);
-                    var ticket = new AuthenticationTicket(principal, Scheme.Name);
-
-                    return Task.FromResult(AuthenticateResult.Success(ticket));
-                }
-                case "user" when password == "password":
-                {
-                    var claims = new[] {
-                        new Claim(ClaimTypes.Name, username),
-                        new Claim(ClaimTypes.Role, "User")
-                    };
-                    var identity = new ClaimsIdentity(claims, Scheme.Name);
-                    var principal = new ClaimsPrincipal(identity);
-                    var ticket = new AuthenticationTicket(principal, Scheme.Name);
-
-                    return Task.FromResult(AuthenticateResult.Success(ticket));
-                }
-                default:
-                    return Task.FromResult(AuthenticateResult.Fail("Invalid Username or Password"));
+                return AuthenticateResult.Fail("Invalid Username or Password");
             }
+
+            var claims = new[] {
+                new Claim(ClaimTypes.Name, employee.Login),
+                new Claim(ClaimTypes.Role, employee.Role)
+            };
+            var identity = new ClaimsIdentity(claims, Scheme.Name);
+            var principal = new ClaimsPrincipal(identity);
+            var ticket = new AuthenticationTicket(principal, Scheme.Name);
+
+            return AuthenticateResult.Success(ticket);
         }
         catch
         {
-            return Task.FromResult(AuthenticateResult.Fail("Invalid Authorization Header"));
+            return AuthenticateResult.Fail("Invalid Authorization Header");
         }
     }
 }
