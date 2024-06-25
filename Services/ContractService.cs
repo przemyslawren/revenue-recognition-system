@@ -10,11 +10,13 @@ public class ContractService
 {
     private readonly ApplicationDbContext _context;
     private readonly IMapper _mapper;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public ContractService(ApplicationDbContext context, IMapper mapper)
+    public ContractService(ApplicationDbContext context, IMapper mapper, IHttpClientFactory httpClientFactory)
     {
         _context = context;
         _mapper = mapper;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<ContractDto> CreateContractAsync(int clientId, int softwareId, int supportYears)
@@ -28,9 +30,7 @@ public class ContractService
         }
 
         var highestDiscount = software.Discounts
-            .Where(d => d.StartDate <= DateTime.Now && d.EndDate >= DateTime.Now)
-            .OrderByDescending(d => d.Percentage)
-            .FirstOrDefault();
+            .Where(d => d.StartDate <= DateTime.Now && d.EndDate >= DateTime.Now).MaxBy(d => d.Percentage);
 
         decimal price = software.UpfrontCost;
 
@@ -85,13 +85,58 @@ public class ContractService
 
         _context.Payments.Add(payment);
         await _context.SaveChangesAsync();
+
+        if (totalPaid + amount != contract.Price) return _mapper.Map<PaymentDto>(payment);
         
-        if (totalPaid + amount == contract.Price)
-        {
-            contract.IsPaid = true;
-            await _context.SaveChangesAsync();
-        }
+        contract.IsPaid = true;
+        await _context.SaveChangesAsync();
 
         return _mapper.Map<PaymentDto>(payment);
+    }
+    
+    public async Task<decimal> CalculateRevenue(string currency = "PLN")
+    {
+        var revenue = await _context.Payments.SumAsync(p => p.Amount);
+
+        if (currency == "PLN") return revenue;
+        
+        var exchangeRate = await GetExchangeRate("PLN", currency);
+        revenue *= exchangeRate;
+
+        return revenue;
+    }
+
+    public async Task<decimal> CalculatePredictedRevenue(string currency = "PLN")
+    {
+        var currentRevenue = await CalculateRevenue(currency);
+
+        var predictedContractsRevenue = await _context.Contracts
+            .Where(c => !c.IsPaid)
+            .SumAsync(c => c.Price);
+
+        var predictedSubscriptionsRevenue = await _context.Subscriptions
+            .Where(s => s.IsActive)
+            .SumAsync(s => s.MonthlyCost);
+
+        var predictedRevenue = currentRevenue + predictedContractsRevenue + predictedSubscriptionsRevenue;
+
+        if (currency == "PLN") return predictedRevenue;
+        
+        var exchangeRate = await GetExchangeRate("PLN", currency);
+        predictedRevenue *= exchangeRate;
+
+        return predictedRevenue;
+    }
+
+    private async Task<decimal> GetExchangeRate(string fromCurrency, string toCurrency)
+    {
+        var client = _httpClientFactory.CreateClient();
+        var response = await client.GetStringAsync($"https://api.exchangerate-api.com/v4/latest/{fromCurrency}");
+        var exchangeRateData = System.Text.Json.JsonSerializer.Deserialize<ExchangeRateData>(response);
+        if (exchangeRateData != null)
+        {
+            return exchangeRateData.Rates[toCurrency];
+        } 
+        throw new InvalidOperationException("Failed to get exchange rate data.");
     }
 }

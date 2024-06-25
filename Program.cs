@@ -8,7 +8,7 @@ using RevenueRecognitionSystem.services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -39,13 +39,15 @@ builder.Services.AddSwaggerGen(options =>
                     Id = "basic"
                 }
             },
-            new string[] { }
+            Array.Empty<string>()
         }
     });
 });
 
 builder.Services.AddScoped<ClientService>();
+builder.Services.AddScoped<ContractService>();
 builder.Services.AddAutoMapper(typeof(Program));
+builder.Services.AddHttpClient();
 
 builder.Services.AddAuthentication("BasicAuthentication")
     .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
@@ -61,7 +63,10 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Revenue Recognition System API v1.0");
+    });
 }
 
 app.UseHttpsRedirection();
