@@ -44,7 +44,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-builder.Services.AddScoped<ClientsService>();
+builder.Services.AddScoped<ClientService>();
 builder.Services.AddAutoMapper(typeof(Program));
 
 builder.Services.AddAuthentication("BasicAuthentication")

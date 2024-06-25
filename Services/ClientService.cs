@@ -6,12 +6,12 @@ using RevenueRecognitionSystem.models;
 
 namespace RevenueRecognitionSystem.services;
 
-public class ClientsService
+public class ClientService
 {
     private readonly ApplicationDbContext _context;
     private readonly IMapper _mapper;
 
-    public ClientsService(ApplicationDbContext context, IMapper mapper)
+    public ClientService(ApplicationDbContext context, IMapper mapper)
     {
         _context = context;
         _mapper = mapper;
@@ -39,7 +39,7 @@ public class ClientsService
             var existingClient = await _context.IndividualClients.FindAsync(individualDto.Id);
             if (existingClient != null && existingClient.PESEL != individualDto.PESEL)
             {
-                throw new InvalidOperationException("Cannot change PESEL number for individual clients.");
+                throw new InvalidOperationException("Cannot change PESEL number.");
             }
             _mapper.Map(individualDto, existingClient);
         }
@@ -48,7 +48,7 @@ public class ClientsService
             var existingClient = await _context.CompanyClients.FindAsync(companyDto.Id);
             if (existingClient != null && existingClient.KRS != companyDto.KRS)
             {
-                throw new InvalidOperationException("Cannot change KRS number for company clients.");
+                throw new InvalidOperationException("Cannot change KRS number.");
             }
             _mapper.Map(companyDto, existingClient);
         }

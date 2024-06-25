@@ -9,18 +9,18 @@ namespace RevenueRecognitionSystem.controllers;
 [ApiController]
 public class ClientsController : ControllerBase
 {
-    private readonly ClientsService _clientsService;
+    private readonly ClientService _clientService;
 
-    public ClientsController(ClientsService clientsService)
+    public ClientsController(ClientService clientService)
     {
-        _clientsService = clientsService;
+        _clientService = clientService;
     }
 
     [HttpPost("individual")]
     [Authorize]
     public async Task<IActionResult> AddIndividualClient([FromBody] IndividualClientDto clientDto)
     {
-        await _clientsService.AddClientAsync(clientDto);
+        await _clientService.AddClientAsync(clientDto);
         return Ok();
     }
 
@@ -28,7 +28,7 @@ public class ClientsController : ControllerBase
     [Authorize]
     public async Task<IActionResult> AddCompanyClient([FromBody] CompanyClientDto clientDto)
     {
-        await _clientsService.AddClientAsync(clientDto);
+        await _clientService.AddClientAsync(clientDto);
         return Ok();
     }
 
@@ -38,7 +38,7 @@ public class ClientsController : ControllerBase
     {
         try
         {
-            await _clientsService.UpdateClientAsync(clientDto);
+            await _clientService.UpdateClientAsync(clientDto);
             return Ok();
         }
         catch (InvalidOperationException ex)
@@ -53,7 +53,7 @@ public class ClientsController : ControllerBase
     {
         try
         {
-            await _clientsService.UpdateClientAsync(clientDto);
+            await _clientService.UpdateClientAsync(clientDto);
             return Ok();
         }
         catch (InvalidOperationException ex)
@@ -68,7 +68,7 @@ public class ClientsController : ControllerBase
     {
         try
         {
-            await _clientsService.RemoveClientAsync(id);
+            await _clientService.RemoveClientAsync(id);
             return Ok();
         }
         catch (InvalidOperationException ex)
@@ -81,7 +81,7 @@ public class ClientsController : ControllerBase
     [Authorize]
     public async Task<IActionResult> GetAllIndividualClients()
     {
-        var clients = await _clientsService.GetAllIndividualClientsAsync();
+        var clients = await _clientService.GetAllIndividualClientsAsync();
         return Ok(clients);
     }
 
@@ -89,7 +89,7 @@ public class ClientsController : ControllerBase
     [Authorize]
     public async Task<IActionResult> GetAllCompanyClients()
     {
-        var clients = await _clientsService.GetAllCompanyClientsAsync();
+        var clients = await _clientService.GetAllCompanyClientsAsync();
         return Ok(clients);
     }
 }
